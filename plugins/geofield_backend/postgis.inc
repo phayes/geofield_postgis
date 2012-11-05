@@ -7,7 +7,7 @@ $plugin = array(
   'types' => array('Point','LineString','Polygon','MultiPoint','MultiLineString','MultiPolygon','GeometryCollection'),
   'validate' => NULL,     //@@TODO: Additional validation callback. Takes a GeoPHP Geometry object.
   'update_field' => 'geofield_postgis_backend_update_field',
-  'postdelete' => NULL,   //@@TODO: Callback after deleting field. Could be used for removing indexes and other cleanup.
+  'delete_field' => 'geofield_postgis_backend_delete_field',
   'requirements' => 'geofield_postgis_backend_requirements',
   'settings' => 'geofield_postgis_backend_settings',
 );
@@ -86,6 +86,16 @@ function geofield_postgis_backend_update_field($field, $prior_field, $has_data) 
     $db_info = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
     $table = current(array_keys($db_info));
     $column = $db_info[$table]['geom'];
-    db_query('CREATE INDEX ' . $table . '_' . $column . '_idx ON {' . $table . '} USING GIST ( ' . $column . ' )');
+    db_query('CREATE INDEX ' . $table . '_' . $column . '_postgis_idx ON {' . $table . '} USING GIST ( ' . $column . ' )');
+  }
+}
+
+function geofield_postgis_backend_delete_field($field) {
+  if (!$has_data) {
+    //@@TODO: is there a better way to find this info?
+    $db_info = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
+    $table = current(array_keys($db_info));
+    $column = $db_info[$table]['geom'];
+    db_query('DROP INDEX ' . $table . '_' . $column . '_postgis_idx');
   }
 }
