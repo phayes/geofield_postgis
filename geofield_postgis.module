@@ -12,6 +12,6 @@ function geofield_postgis_ctools_plugin_api($module, $api) {
 */
 function geofield_postgis_ctools_plugin_directory($module, $plugin) {
   if ($plugin == 'geofield_backend') {
-    return 'includes/' . $plugin;
+    return 'plugins/' . $plugin;
   }
 }
