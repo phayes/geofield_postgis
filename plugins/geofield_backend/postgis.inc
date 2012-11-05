@@ -6,19 +6,18 @@ $plugin = array(
   'save' => 'geofield_postgis_backend_save',
   'types' => array('Point','LineString','Polygon','MultiPoint','MultiLineString','MultiPolygon','GeometryCollection'),
   'validate' => NULL,     //@@TODO: Additional validation callback. Takes a GeoPHP Geometry object.
-  'postinstall' => NULL,  //@@TODO: Callback after installing a new field. Could be used for adding additional geospatial indexes
+  'postinstall' => NULL,  //@@TODO: Callback after installing a new field. Could be used for adding additional geospatial indexes, or registering the column
   'postdelete' => NULL,   //@@TODO: Callback after deleting field. Could be used for removing indexes and other cleanup.
   'requirements' => 'geofield_postgis_backend_requirements',
   'settings' => 'geofield_postgis_backend_settings',
 );
 
 function geofield_postgis_backend_schema($field) {
-  //@@TODO: Geometry vs. Geography
   //@@TODO: SRID
-  $settings = $field['settings']['settings']['postgis'];
+  $settings = $field['settings']['postgis'];
   return array(
     'type' => 'blob',
-    'pgsql_type' => $settings['geomtype'],
+    'pgsql_type' => $settings['fieldtype'],
     'not null' => FALSE,
   );
 }
