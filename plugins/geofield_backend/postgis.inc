@@ -65,9 +65,14 @@ function geofield_postgis_backend_settings($defaults) {
   );
   
   // If we are running postGIS 2.0, add an option to use geography fields
-  $version = db_query('SELECT substring(PostGIS_Version() from 1 for 3)')->fetchField();
-  if (version_compare($version, '2.0')) {
-    $form['#options']['geography'] = 'Geography';
+  try {
+    $version = db_query('SELECT substring(PostGIS_Version() from 1 for 3)')->fetchField();
+    if (version_compare($version, '2.0')) {
+      $form['#options']['geography'] = 'Geography';
+    }
+  }
+  catch(PDOException $e) {
+    // Do nothing
   }
   
   return $form;
