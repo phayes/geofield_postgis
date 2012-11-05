@@ -54,7 +54,7 @@ function geofield_postgis_backend_requirements(&$error) {
 
 function geofield_postgis_backend_settings($field, $instance, $has_data) {
   $form = array();
-  $defaults = $field['settings']['postgis'];
+  $defaults = (isset($field['settings']['postgis'])) ? $field['settings']['postgis'] : array();
   
   $form['fieldtype'] = array(
     '#title' => 'PostGIS Type',
