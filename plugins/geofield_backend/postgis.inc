@@ -52,8 +52,9 @@ function geofield_postgis_backend_requirements(&$error) {
   }
 }
 
-function geofield_postgis_backend_settings($defaults) {
+function geofield_postgis_backend_settings($field, $instance, $has_data) {
   $form = array();
+  $defaults = $field['settings']['postgis'];
   
   $form['fieldtype'] = array(
     '#title' => 'PostGIS Type',
@@ -62,6 +63,7 @@ function geofield_postgis_backend_settings($defaults) {
       'geometry' => 'Geometry',
     ),
     '#default_value' => isset($defaults['fieldtype']) ? $defaults['fieldtype'] : 'geometry',
+    '#disabled' => $has_data,
   );
   
   // If we are running postGIS 2.0, add an option to use geography fields
