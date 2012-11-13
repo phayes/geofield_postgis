@@ -23,6 +23,7 @@ function geofield_postgis_backend_schema($field) {
 }
 
 function geofield_postgis_backend_save($geometry) {
+  $geometry = geoPHP::load($geometry);
   $unpacked = unpack('H*', $geometry->out('ewkb'));
   return $unpacked[1];
 }
