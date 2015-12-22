@@ -12,9 +12,11 @@ $plugin = array(
   'settings' => 'geofield_postgis_backend_settings',
 );
 
+
+// 7 field.api.php	hook_field_schema($field) ????? 
 function geofield_postgis_backend_schema($field) {
   //@@TODO: SRID
-  $settings = $field['settings']['postgis'];
+  $settings = $field['settings']['postgis']; // geometry or geography
   return array(
     'type' => 'blob',
     'pgsql_type' => $settings['fieldtype'],
@@ -22,9 +24,12 @@ function geofield_postgis_backend_schema($field) {
   );
 }
 
+// This is when saving a value 
 function geofield_postgis_backend_save($geometry) {
   $geometry = geoPHP::load($geometry);
+	dsm($geometry,'PostGIS provider - Geometry');
   $unpacked = unpack('H*', $geometry->out('ewkb'));
+	dsm($unpacked,'PostGIS provider - Unpacked');
   return $unpacked[1];
 }
 
@@ -53,6 +58,8 @@ function geofield_postgis_backend_requirements(&$error) {
   }
 }
 
+/* Interface settings */
+
 function geofield_postgis_backend_settings($field, $instance, $has_data) {
   $form = array();
   $defaults = (isset($field['settings']['postgis'])) ? $field['settings']['postgis'] : array();
@@ -77,16 +84,60 @@ function geofield_postgis_backend_settings($field, $instance, $has_data) {
   catch(PDOException $e) {
     // Do nothing
   }
+
+	$form['srid'] = array(
+		'#type' => 'textfield',
+		'#title' => t('SRID'),
+		'#default_value' => isset($defaults['srid']) ? $defaults['srid'] :  $field['settings']['srid'],
+		'#description' => t('Select the map projection that shall be used to map the globe to a plain surface. In general 4326 fits the whole globe pretty well but local projections might give more precise results for specific areas (at the cost of more distortions in other areas).'),
+		'#disabled' => $has_data,
+		'#required' => TRUE,
+	);
   
   return $form;
 }
 
+
 function geofield_postgis_backend_update_field($field, $prior_field, $has_data) {
   if (!$has_data) {
-    //@@TODO: is there a better way to find this info?
-    $db_info = $field['storage']['details']['sql']['FIELD_LOAD_CURRENT'];
-    $table = current(array_keys($db_info));
-    $column = $db_info[$table]['geom'];
-    db_query('CREATE INDEX ' . $table . '_' . $column . '_postgis_idx ON {' . $table . '} USING GIST ( ' . $column . ' )');
+	// from postgis.field.inc in PostGIS module
+  $storage = field_sql_storage_field_storage_details($field);
+
+  $connection = Database::getConnection();
+	$srid = $field['settings']['postgis']['srid'];
+	$type = $field['settings']['postgis']['fieldtype'];
+
+  foreach ($storage['sql'] as $tables) {
+
+    foreach ($tables as $table => $columns) {
+			// Get only the geom column
+			$column = $columns['geom'];	
+      // Use prefix as schema and/or table prefix.
+      $prefix = $connection->tablePrefix($table);
+      if ($pos = strpos($prefix, '.')) {
+        $schema = substr($prefix, 0, $pos);
+        $prefix_table = substr($prefix, $pos + 1, strlen($prefix)) . $table;
+      } else {
+        $schema = '';
+        $prefix_table = $prefix . $table;
+      }
+
+      db_drop_field($table, $column);
+
+      db_query(
+        'SELECT AddGeometryColumn(:schema, :table, :column, :srid, :type, 2)',
+        array(
+          ':schema' => $schema,
+          ':table'  => $prefix_table,
+          ':column' => $column,
+          ':srid'   => $srid,
+          ':type'   => $type,
+        )
+      );
+
+      db_query('CREATE INDEX ' . $table . '_' . $column . '_idx ON {' . $table . '} USING GIST ( ' . $column . ' )');
+
+    	}
+  	}
   }
 }
