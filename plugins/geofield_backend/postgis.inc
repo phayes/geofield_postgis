@@ -26,7 +26,17 @@ function geofield_postgis_backend_schema($field) {
 function geofield_postgis_backend_save($geometry) {
   $geometry = geoPHP::load($geometry);
   $unpacked = unpack('H*', $geometry->out('ewkb'));
-  return $unpacked[1];
+  //@@TODO: cannot imagine how to get the settled srid on the field instance here
+  //  I'm using incode 32648 transformation for a postgis point with srid 32648 - It works
+  $query = db_query(
+    'SELECT ST_SetSRID(:geom::geometry, 32648)',
+        array(
+          ':geom' => $unpacked[1],
+        )
+  );
+  
+  $new = $query->fetchObject();
+  return $new->st_setsrid;
 }
 
 function geofield_postgis_backend_requirements(&$error) {
